@@ -10,6 +10,7 @@ requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.141.1",
     "httpx2>=2.10.0",
+    "langgraph>=1.2.11",
     "ollama>=0.6.2",
     "qdrant-client>=1.19.0",
     "uvicorn>=0.52.3",
