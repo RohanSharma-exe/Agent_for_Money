@@ -7,6 +7,8 @@ from local_opportunity_agent.agents.supervisor import (
     SupervisorError,
 )
 from local_opportunity_agent.runtime.state import AgentState
+from local_opportunity_agent.tools.memory import MemorySearchTool
+from local_opportunity_agent.tools.web.research import ResearchTool
 
 
 def supervisor_node(
@@ -53,30 +55,84 @@ def route_after_supervisor(
     return "finalize"
 
 
-def research_placeholder(
+def research_node(
     state: AgentState,
+    research_tool: ResearchTool,
 ) -> AgentState:
-    """Placeholder for the future web-research tool."""
-    state.tool_results.append(
+    """Execute the web-research tool."""
+    if not state.tool_calls:
+        state.error = "Research was requested without a tool call."
+        return state
+
+    tool_call = state.tool_calls[-1]
+    query = tool_call.get("query")
+
+    if not isinstance(query, str) or not query.strip():
+        state.error = "Research requires a non-empty query."
+        return state
+
+    result = research_tool.execute(
         {
-            "tool": "research",
-            "status": "not_implemented",
+            "query": query,
+            "max_results": 5,
         }
     )
+
+    state.tool_results.append(
+        {
+            "tool": result.tool_name,
+            "success": result.success,
+            "data": result.data,
+            "error": result.error,
+        }
+    )
+
+    if not result.success:
+        state.error = result.error or "Research failed."
+        return state
+
+    state.evidence = result.data.get("results", [])
 
     return state
 
 
-def memory_search_placeholder(
+def memory_search_node(
     state: AgentState,
+    memory_search_tool: MemorySearchTool,
 ) -> AgentState:
-    """Placeholder for the future memory-search tool."""
-    state.tool_results.append(
+    """Execute the semantic memory-search tool."""
+    if not state.tool_calls:
+        state.error = "Memory search was requested without a tool call."
+        return state
+
+    tool_call = state.tool_calls[-1]
+    query = tool_call.get("query")
+
+    if not isinstance(query, str) or not query.strip():
+        state.error = "Memory search requires a non-empty query."
+        return state
+
+    result = memory_search_tool.execute(
         {
-            "tool": "memory_search",
-            "status": "not_implemented",
+            "query": query,
+            "limit": 5,
         }
     )
+
+    state.tool_results.append(
+        {
+            "tool": result.tool_name,
+            "success": result.success,
+            "data": result.data,
+            "error": result.error,
+        }
+    )
+
+    if not result.success:
+        state.error = result.error or "Memory search failed."
+        return state
+
+    state.memories = result.data.get("results", [])
 
     return state
 
@@ -90,13 +146,17 @@ def finalize(
         return state
 
     if state.next_action == "research":
-        state.final_answer = (
-            "The supervisor selected research. The research tool will be connected next."
-        )
+        if state.evidence:
+            state.final_answer = f"Research completed and found {len(state.evidence)} result(s)."
+        else:
+            state.final_answer = "Research completed but found no results."
     elif state.next_action == "memory_search":
-        state.final_answer = (
-            "The supervisor selected memory search. The memory tool will be connected next."
-        )
+        if state.memories:
+            state.final_answer = (
+                f"Memory search found {len(state.memories)} relevant stored result(s)."
+            )
+        else:
+            state.final_answer = "Memory search completed but found no relevant stored results."
     else:
         state.final_answer = "The supervisor selected a direct answer."
 
@@ -105,6 +165,8 @@ def finalize(
 
 def build_graph(
     supervisor: Supervisor,
+    memory_search_tool: MemorySearchTool,
+    research_tool: ResearchTool,
 ):
     """Build the single-agent opportunity research graph."""
     graph = StateGraph(AgentState)
@@ -119,12 +181,18 @@ def build_graph(
 
     graph.add_node(
         "research",
-        research_placeholder,
+        lambda state: research_node(
+            state,
+            research_tool,
+        ),
     )
 
     graph.add_node(
         "memory_search",
-        memory_search_placeholder,
+        lambda state: memory_search_node(
+            state,
+            memory_search_tool,
+        ),
     )
 
     graph.add_node(

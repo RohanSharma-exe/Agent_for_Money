@@ -12,6 +12,8 @@ from local_opportunity_agent.llm.ollama_client import OllamaChatResult
 class ApiTests(unittest.TestCase):
     def setUp(self) -> None:
         self.client = TestClient(create_app())
+        self.client.__enter__()
+        self.addCleanup(self.client.__exit__, None, None, None)
 
     def test_models_endpoint_returns_configured_chat_model(self) -> None:
         response = self.client.get("/v1/models")
