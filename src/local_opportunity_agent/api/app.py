@@ -8,7 +8,10 @@ from local_opportunity_agent.core.settings import (
     load_settings,
 )
 from local_opportunity_agent.llm import OllamaService
-from local_opportunity_agent.memory.database import Database
+from local_opportunity_agent.memory import (
+    Database,
+    ObsidianMemory,
+)
 
 
 def create_app() -> FastAPI:
@@ -19,6 +22,9 @@ def create_app() -> FastAPI:
     database = Database(settings.database_path)
     database.initialize()
 
+    obsidian = ObsidianMemory(settings.obsidian_path)
+    obsidian.initialize()
+
     app = FastAPI(
         title="Local Opportunity Agent",
         version="0.1.0",
@@ -27,6 +33,7 @@ def create_app() -> FastAPI:
 
     app.state.settings = settings
     app.state.database = database
+    app.state.obsidian = obsidian
 
     app.state.ollama_service = OllamaService(
         base_url=settings.ollama_base_url,
