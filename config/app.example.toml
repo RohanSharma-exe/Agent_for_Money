@@ -1,0 +1,10 @@
+[runtime]
+env = "local"
+log_level = "INFO"
+
+[ollama]
+base_url = "http://localhost:11434"
+chat_model = "qwen3:4b-instruct"
+embedding_model = "nomic-embed-text"
+max_context_tokens = 4096
+concurrent_llm_requests = 1
