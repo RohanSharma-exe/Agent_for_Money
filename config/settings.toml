@@ -8,3 +8,7 @@ chat_model = "qwen3:4b-instruct"
 embedding_model = "nomic-embed-text"
 max_context_tokens = 4096
 concurrent_llm_requests = 1
+
+[memory]
+qdrant_collection = "opportunity_memory"
+qdrant_vector_size = 768
