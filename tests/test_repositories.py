@@ -4,13 +4,12 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from local_opportunity_agent.memory.repositories.opportunities import (
-    OpportunityRepository,
-)
-
 from local_opportunity_agent.memory.database import Database
 from local_opportunity_agent.memory.repositories.evidence import (
     EvidenceRepository,
+)
+from local_opportunity_agent.memory.repositories.opportunities import (
+    OpportunityRepository,
 )
 from local_opportunity_agent.memory.repositories.sources import (
     SourceRepository,
